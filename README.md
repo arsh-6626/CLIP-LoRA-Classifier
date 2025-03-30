@@ -1,137 +1,61 @@
-# Low-Rank Few-Shot Adaptation of Vision-Language Models [CVPRW 2024]
+# CLIP-LoRA-Classifier
 
-The official implementation of [*Low-Rank Few-Shot Adaptation of Vision-Language Models*](https://arxiv.org/abs/2405.18541).
+## Overview
 
-**Authors**:
-[Maxime Zanella](https://scholar.google.com/citations?user=FIoE9YIAAAAJ&hl=fr&oi=ao),
-[Ismail Ben Ayed](https://scholar.google.com/citations?user=29vyUccAAAAJ&hl=fr&oi=ao).
+CLIP-LoRA-Classifier is designed to enhance image classification tasks by fine-tuning the CLIP (Contrastive Language-Image Pretraining) model using Low-Rank Adaptation (LoRA). This approach enables efficient adaptation of large-scale vision-language models to specific classification tasks with limited data, leveraging LoRA's parameter-efficient fine-tuning capabilities.
 
-We present CLIP-LoRA, an easy-to-use few-shot method for Vision-Language Models with fixed hyperparameters for every task and every number of shots. This repository also aims at facilitating the usage of Low-Rank adapters (LoRA) in Vision-Language Models like CLIP.
+## Key Components
 
-<p align="center">
-  <img src="peft2.jpg" alt="PEFT" width="300" height="250">
-  <br>
-  <em>Figure 1: Low-Rank Adaptation (LoRA) is easy to use and does not create any additional inference latency.</em>
-</p>
+- `main.py`: Orchestrates the training and evaluation processes for the classification task. It loads the CLIP model, applies LoRA adaptations, prepares datasets, and manages the training loop.
+  
+- `lora.py`: Implements the LoRA adaptation mechanism, enabling the integration of trainable low-rank matrices into the CLIP model's layers to facilitate efficient fine-tuning for classification purposes.
 
-Here is how to run the experiments:
+- `custom_dataset.py`: Defines a custom dataset class tailored for image classification tasks. It handles data loading, preprocessing, and augmentation to ensure the dataset is compatible with the CLIP model's requirements.
 
-1. [Installation](#installation) 
-2. [Usage](#how-to-execute-CLIP-LoRA) 
+## Dataset Preparation
 
-A quick guide on how LoRA is implemented in this repository:
+To prepare your dataset for classification:
 
-3. [LoRA in MultiheadAttention](#lora-in-multiheadattention)
+1. **Organize Data**: Structure your dataset into appropriate directories, typically with separate folders for each class containing corresponding images.
 
-Please consider supporting our work:
+2. **Preprocessing**: Utilize the transformations defined in `custom_dataset.py` to preprocess images, ensuring they align with the input requirements of the CLIP model.
 
-4. [Citation](#citation)
+3. **Loading Data**: Use the dataset class from `custom_dataset.py` to load your data, which can then be fed into the training pipeline managed by `main.py`.
 
-If you have any inquiries:
+## Training Procedure
 
-5. [Contact](#contact)
-   
+1. **Initialize Model**: `main.py` loads the pre-trained CLIP model and applies LoRA adaptations as defined in `lora.py`.
 
-## Installation 
+2. **Data Loading**: The custom dataset is loaded and preprocessed using the methods from `custom_dataset.py`.
 
-### Environment configuration
+3. **Fine-Tuning**: The model undergoes fine-tuning on the classification dataset, with LoRA enabling efficient adaptation by introducing trainable low-rank matrices into the model's layers.
 
-Our code requires an environment with PyTorch installed. If you don't have one, consider creating a Python environment with:
-```bash
-conda create -y --name CLIP-LoRA python=3.10.0
-conda activate CLIP-LoRA
-```
-And install Pytorch for instance with:
-```bash
-pip3 install torch==2.0.1 torchaudio==2.0.2 torchvision==0.15.2
-```
+4. **Evaluation**: After training, the model's performance is evaluated on a validation set to assess its classification accuracy.
 
-### Datasets installation
+## LoRA Integration
 
-Please follow [DATASETS.md](DATASETS.md) to install the datasets.
+The integration of LoRA into the CLIP model is managed by `lora.py`, which provides functions to:
 
-## How to execute CLIP-LoRA
+- **Apply LoRA**: Introduce low-rank adaptations into specific layers of the CLIP model, facilitating efficient fine-tuning for classification tasks.
 
-Execute CLIP-LoRA on the ImageNet dataset with a random seed of 1 by entering the following command:
+- **Manage Parameters**: Control which parameters are trainable during fine-tuning, focusing on the LoRA-adapted components to optimize computational efficiency.
 
-```bash
-python main.py --root_path /path/to/your/data --dataset imagenet --seed 1
-```
+- **Save and Load States**: Handle the saving and loading of LoRA-adapted model states, ensuring reproducibility and ease of deployment.
 
-You can also exectute CLIP-LoRA on the 10 other datasets:
+## Usage
 
-```bash
-python main.py --root_path /path/to/your/data --dataset dataset_name --seed 1
-```
+To fine-tune the CLIP model for your classification task:
 
-You can optionally provide a save_path to save the LoRA modules, which can be reload easily with the --eval_only argument. The code will automatically check if your trained LoRA with the corresponding rank, alpha, encoder, params and position to ensure compatibility. The folder will be structured like that:
-```
-/your/save/path
-└── backbone
-    └── dataset
-        └── Xshots
-            ├── seedY
-```
+1. **Prepare Dataset**: Organize and preprocess your dataset as outlined above.
 
-Here is the command line:
-```bash
-python main.py --root_path /path/to/your/data --dataset dataset_name --seed 1 --save_path /your/save/path --eval_only 
-```
+2. **Configure Training**: Adjust training parameters and configurations in `main.py` to suit your specific classification task.
 
-## LoRA in MultiheadAttention
+3. **Run Training**: Execute `main.py` to initiate the fine-tuning process. Monitor training progress and evaluate the model's performance using the provided evaluation metrics.
 
-The `PlainMultiheadAttentionLoRA` class in `loralib/layers.py` extends the standard PyTorch multi-head attention mechanism by incorporating Low-Rank Adaptation (LoRA). This class constructs explicit linear modules for each component of the attention mechanism—query (`q`), key (`k`), value (`v`), and output (`o`)—providing a structured and adaptable foundation for your experiments.
+## Acknowledgments
 
-### Class Overview
+This project is inspired by the work of Maxime Zanella and Ismail Ben Ayed, particularly their implementation of CLIP-LoRA for few-shot adaptation of vision-language models. Their contributions have significantly influenced the development of this classifier.
 
-`PlainMultiheadAttentionLoRA` takes an existing `nn.MultiheadAttention` module, replicates its configuration, and integrates LoRA linear modules.
+## License
 
-### Key Features
-
-- **Parameter Initialization:** The initialization process involves copying weights and biases from a pre-existing multi-head attention model. Each LoRA module (`q`, `k`, `v`, `o`) is adapted based on the specified requirements in the `enable_lora` list.
-- **LoRA Integration:** The replacement of standard linear layers with `LinearLoRA` layers introduces low-rank matrices, which are parameterized by the rank of adaptation (`r`) and the scaling factor (`lora_alpha`).
-- **Forward Pass:** The `forward_module` method manages the attention computation, incorporating optional dropout settings on the LoRA modules.
-
-### Example Usage
-
-The following snippet demonstrates how to initialize the `PlainMultiheadAttentionLoRA` with an existing multi-head attention module.
-
-```python
-from loralib.layers import PlainMultiheadAttentionLoRA
-
-# Initialize with an existing MultiheadAttention module
-existing_mha = nn.MultiheadAttention(embed_dim=512, num_heads=8)
-lora_mha = PlainMultiheadAttentionLoRA(existing_mha, enable_lora=['q', 'k', 'v', 'o'], r=4, lora_alpha=2)
-```
-
-## Few-shot performance
-
-<p align="center">
-  <img src="few_shot.png" alt="few_shot" width="750" height="500">
-  <br>
-  <em>Figure 2: Detailed few-shot learning results on the 10 fine-grained datasets and ImageNet with the ViT-B/16 visual backbone. Average performance for the ViT-B/16, ViT-B/32 and ViT-L/14 on the same 11 datasets is reported in the last three plots.</em>
-</p>
-
-## Citation
-
-If you find this project useful, please cite it as follows:
-
-```bibtex
-@inproceedings{zanella2024low,
-  title={Low-Rank Few-Shot Adaptation of Vision-Language Models},
-  author={Zanella, Maxime and Ben Ayed, Ismail},
-  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition Workshops},
-  pages={1593--1603},
-  year={2024}
-}
-```
-
-## Contact
-
-For any inquiries, feel free to [create an issue](https://github.com/MaxZanella/CLIP-LoRA/issues) or contact us at [maxime.zanella@uclouvain.be](mailto:maxime.zanella@uclouvain.be).
-
-## Acknowledgement
-
-We express our gratitude to the [CoOp](https://github.com/KaiyangZhou/CoOp) and [Tip-Adapter](https://github.com/gaopengcuhk/Tip-Adapter) authors for their open-source contribution.
-
-
+This project is licensed under the MIT License. See the LICENSE file for more details.
